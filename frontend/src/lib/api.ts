@@ -9,6 +9,28 @@ export interface User {
   role: Role;
 }
 
+export interface Project {
+  id: number;
+  title: string;
+  abstract: string | null;
+  domain: string | null;
+  year: number | null;
+  supervisor: string | null;
+  teamMembers: string[];
+  pdfPath: string | null;
+  createdAt: string;
+}
+
+export interface StudentProfile {
+  studentId: string | null;
+  department: string | null;
+  bio: string | null;
+  skills: string[];
+  interests: string[];
+  technologies: string[];
+  domains: string[];
+}
+
 export function getToken() {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("token");
@@ -40,6 +62,11 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       ...options.headers,
     },
   });
+
+  if (res.status === 401 && token) {
+    logout();
+    window.location.href = "/login";
+  }
 
   if (res.status === 204) return undefined as T;
   const data = await res.json();
