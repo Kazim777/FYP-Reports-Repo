@@ -3,16 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import clsx from "clsx";
+import { BookOpen, GraduationCap } from "lucide-react";
 import { api, saveSession, dashboardPath, Role, User } from "@/lib/api";
+import AuthLayout from "@/components/AuthLayout";
+import { Alert, Button, Field, Input } from "@/components/ui";
+
+const roles: { value: Role; label: string; icon: React.ElementType }[] = [
+  { value: "student", label: "Student", icon: GraduationCap },
+  { value: "faculty", label: "Faculty", icon: BookOpen },
+];
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "student" as Role });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
     setError("");
+    setLoading(true);
     try {
       const { token, user } = await api<{ token: string; user: User }>("/auth/register", {
         method: "POST",
@@ -22,50 +37,73 @@ export default function RegisterPage() {
       router.push(dashboardPath(user.role));
     } catch (err) {
       setError((err as Error).message);
+      setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 rounded border p-6">
-        <h1 className="text-2xl font-semibold">Register</h1>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <input
-          className="w-full rounded border p-2"
-          placeholder="Full name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-        <input
-          className="w-full rounded border p-2"
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          required
-        />
-        <input
-          className="w-full rounded border p-2"
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          required
-        />
-        <select
-          className="w-full rounded border p-2"
-          value={form.role}
-          onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
-        >
-          <option value="student">Student</option>
-          <option value="faculty">Faculty</option>
-        </select>
-        <button className="w-full rounded bg-blue-600 p-2 text-white hover:bg-blue-700">Create account</button>
-        <p className="text-sm">
-          Already registered? <Link href="/login" className="text-blue-600">Login</Link>
-        </p>
+    <AuthLayout title="Create your account" subtitle="Join the FYP repository in less than a minute.">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && <Alert>{error}</Alert>}
+
+        <div className="grid grid-cols-2 gap-3">
+          {roles.map((r) => (
+            <button
+              key={r.value}
+              type="button"
+              onClick={() => setForm({ ...form, role: r.value })}
+              className={clsx(
+                "flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition",
+                form.role === r.value
+                  ? "border-brand-500 bg-brand-50 text-brand-700 ring-4 ring-brand-100"
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              <r.icon className="size-4" />
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        <Field label="Full name" htmlFor="name">
+          <Input
+            id="name"
+            placeholder="Ali Khan"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+        </Field>
+        <Field label="Email" htmlFor="email">
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@szabist.pk"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            required
+          />
+        </Field>
+        <Field label="Password" htmlFor="password" hint="At least 6 characters.">
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            required
+          />
+        </Field>
+        <Button type="submit" loading={loading} className="w-full">
+          Create account
+        </Button>
       </form>
-    </main>
+      <p className="mt-6 text-center text-sm text-slate-500">
+        Already registered?{" "}
+        <Link href="/login" className="font-medium text-brand-600 hover:text-brand-700">
+          Log in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

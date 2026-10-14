@@ -4,16 +4,20 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, saveSession, dashboardPath, User } from "@/lib/api";
+import AuthLayout from "@/components/AuthLayout";
+import { Alert, Button, Field, Input } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       const { token, user } = await api<{ token: string; user: User }>("/auth/login", {
         method: "POST",
@@ -23,35 +27,45 @@ export default function LoginPage() {
       router.push(dashboardPath(user.role));
     } catch (err) {
       setError((err as Error).message);
+      setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 rounded border p-6">
-        <h1 className="text-2xl font-semibold">Login</h1>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <input
-          className="w-full rounded border p-2"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="w-full rounded border p-2"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button className="w-full rounded bg-blue-600 p-2 text-white hover:bg-blue-700">Login</button>
-        <p className="text-sm">
-          No account? <Link href="/register" className="text-blue-600">Register</Link>
-        </p>
+    <AuthLayout title="Welcome back" subtitle="Log in to continue to your dashboard.">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && <Alert>{error}</Alert>}
+        <Field label="Email" htmlFor="email">
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@szabist.pk"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoFocus
+          />
+        </Field>
+        <Field label="Password" htmlFor="password">
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </Field>
+        <Button type="submit" loading={loading} className="w-full">
+          Log in
+        </Button>
       </form>
-    </main>
+      <p className="mt-6 text-center text-sm text-slate-500">
+        Don&apos;t have an account?{" "}
+        <Link href="/register" className="font-medium text-brand-600 hover:text-brand-700">
+          Create one
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  faculty
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(160)
+  passwordHash String   @map("password_hash")
+  role         Role
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  profile          StudentProfile?
+  uploadedProjects Project[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  userId       Int      @id @map("user_id")
+  studentId    String?  @map("student_id") @db.VarChar(20)
+  department   String?  @db.VarChar(100)
+  bio          String?
+  skills       String[]
+  interests    String[]
+  technologies String[]
+  domains      String[]
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("student_profiles")
+}
+
+model Project {
+  id           Int      @id @default(autoincrement())
+  title        String   @db.VarChar(300)
+  abstract     String?
+  domain       String?  @db.VarChar(100)
+  year         Int?
+  supervisor   String?  @db.VarChar(120)
+  teamMembers  String[] @map("team_members")
+  pdfPath      String?  @map("pdf_path")
+  uploadedById Int?     @map("uploaded_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  uploadedBy User?              @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  text       ProjectText?
+  embeddings ProjectEmbedding[]
+
+  @@index([domain])
+  @@map("projects")
+}
+
+model ProjectText {
+  projectId   Int      @id @map("project_id")
+  rawText     String?  @map("raw_text")
+  cleanedText String?  @map("cleaned_text")
+  extractedAt DateTime @default(now()) @map("extracted_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_text")
+}
+
+model ProjectEmbedding {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  chunkText String   @map("chunk_text")
+  embedding Float[]
+  modelName String   @map("model_name") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_embeddings")
+}
