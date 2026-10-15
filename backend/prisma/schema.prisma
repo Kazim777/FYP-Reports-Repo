@@ -10,16 +10,19 @@ datasource db {
 enum Role {
   student
   faculty
+  admin
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(120)
-  email        String   @unique @db.VarChar(160)
-  passwordHash String   @map("password_hash")
-  role         Role
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                 Int      @id @default(autoincrement())
+  name               String   @db.VarChar(120)
+  email              String   @unique @db.VarChar(160)
+  passwordHash       String   @map("password_hash")
+  role               Role
+  avatar             String?  @db.VarChar(40)
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   profile          StudentProfile?
   uploadedProjects Project[]
@@ -52,6 +55,8 @@ model Project {
   supervisor   String?  @db.VarChar(120)
   teamMembers  String[] @map("team_members")
   pdfPath      String?  @map("pdf_path")
+  pdfName      String?  @map("pdf_name") @db.VarChar(255)
+  pdfSize      Int?     @map("pdf_size")
   uploadedById Int?     @map("uploaded_by")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -68,6 +73,8 @@ model ProjectText {
   projectId   Int      @id @map("project_id")
   rawText     String?  @map("raw_text")
   cleanedText String?  @map("cleaned_text")
+  pageCount   Int      @map("page_count")
+  wordCount   Int      @map("word_count")
   extractedAt DateTime @default(now()) @map("extracted_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

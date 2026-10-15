@@ -30,7 +30,7 @@ export default function SearchPage() {
 
   return (
     <>
-      <PageHeader title="Search projects" description="Find past FYPs by title, abstract or domain." />
+      <PageHeader title="Search projects" description="Find past FYPs by title, abstract, domain or any text inside their reports." />
 
       <div className="relative">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />

@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api, StudentProfile } from "@/lib/api";
+import { DOMAIN_OPTIONS, INTEREST_OPTIONS, SKILL_OPTIONS, TECHNOLOGY_OPTIONS } from "@/lib/options";
 import { useCurrentUser } from "@/components/AppShell";
-import { Alert, Button, Card, Field, Input, PageHeader, Spinner, TagInput, Textarea } from "@/components/ui";
+import TagPicker from "@/components/TagPicker";
+import UserAvatar from "@/components/UserAvatar";
+import { Alert, Button, Card, Field, Input, PageHeader, Spinner, Textarea } from "@/components/ui";
 
 const empty: StudentProfile = {
   studentId: "",
@@ -30,12 +34,16 @@ export default function ProfilePage() {
   if (!profile) return <Spinner />;
 
   const set = <K extends keyof StudentProfile>(key: K, value: StudentProfile[K]) =>
-    setProfile({ ...profile, [key]: value });
+    setProfile((current) => current && { ...current, [key]: value });
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setStatus(null);
+    if (profile?.skills.length === 0) {
+      setStatus({ tone: "error", text: "Select at least one skill." });
+      return;
+    }
+    setSaving(true);
     try {
       await api("/profiles/me", { method: "PUT", body: JSON.stringify(profile) });
       setStatus({ tone: "success", text: "Profile saved." });
@@ -66,14 +74,18 @@ export default function ProfilePage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="h-fit p-6 text-center">
-          <span className="mx-auto grid size-20 place-items-center rounded-full bg-brand-100 text-2xl font-semibold text-brand-700">
-            {user.name.charAt(0).toUpperCase()}
-          </span>
+          <UserAvatar name={user.name} avatar={user.avatar} size={64} className="mx-auto" />
           <h2 className="mt-4 font-semibold text-slate-900">{user.name}</h2>
           <p className="text-sm text-slate-500">{user.email}</p>
           <p className="mt-3 inline-block rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium capitalize text-slate-600">
             {user.role}
           </p>
+          <Link
+            href="/dashboard/account"
+            className="mt-4 block text-sm font-medium text-brand-600 hover:text-brand-700"
+          >
+            Change avatar
+          </Link>
         </Card>
 
         <div className="space-y-6 lg:col-span-2">
@@ -111,30 +123,38 @@ export default function ProfilePage() {
 
           <Card className="p-6">
             <h3 className="font-semibold text-slate-900">Skills & interests</h3>
-            <p className="mt-1 text-sm text-slate-500">Type and press Enter to add each item.</p>
-            <div className="mt-5 space-y-5">
-              <Field label="Skills">
-                <TagInput value={profile.skills} onChange={(v) => set("skills", v)} placeholder="UI design, APIs, testing…" />
+            <p className="mt-1 text-sm text-slate-500">Click to select or deselect, or add your own.</p>
+            <div className="mt-6 space-y-7">
+              <Field label="Skills" hint="Pick at least one.">
+                <TagPicker
+                  options={SKILL_OPTIONS}
+                  value={profile.skills}
+                  onChange={(v) => set("skills", v)}
+                  addPlaceholder="Add another skill…"
+                />
               </Field>
               <Field label="Technologies">
-                <TagInput
+                <TagPicker
+                  options={TECHNOLOGY_OPTIONS}
                   value={profile.technologies}
                   onChange={(v) => set("technologies", v)}
-                  placeholder="React, Node.js, Python…"
+                  addPlaceholder="Add another technology…"
                 />
               </Field>
               <Field label="Interests">
-                <TagInput
+                <TagPicker
+                  options={INTEREST_OPTIONS}
                   value={profile.interests}
                   onChange={(v) => set("interests", v)}
-                  placeholder="Healthcare, education, fintech…"
+                  addPlaceholder="Add another interest…"
                 />
               </Field>
               <Field label="Preferred project domains">
-                <TagInput
+                <TagPicker
+                  options={DOMAIN_OPTIONS}
                   value={profile.domains}
                   onChange={(v) => set("domains", v)}
-                  placeholder="AI/ML, Web, Mobile, IoT…"
+                  addPlaceholder="Add another domain…"
                 />
               </Field>
             </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, saveSession, dashboardPath, User } from "@/lib/api";
+import { api, landingPath, saveSession, User } from "@/lib/api";
 import AuthLayout from "@/components/AuthLayout";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
@@ -24,7 +24,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       saveSession(token, user);
-      router.push(dashboardPath(user.role));
+      router.push(landingPath(user));
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);

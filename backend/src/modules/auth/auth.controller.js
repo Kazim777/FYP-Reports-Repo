@@ -11,3 +11,11 @@ export async function login(req, res) {
 export async function me(req, res) {
   res.json({ user: await authService.getUserById(req.user.id) });
 }
+
+export async function updateMe(req, res) {
+  res.json({ user: await authService.updateAccount(req.user.id, req.body) });
+}
+
+export async function changePassword(req, res) {
+  res.json({ user: await authService.changePassword(req.user.id, req.body) });
+}

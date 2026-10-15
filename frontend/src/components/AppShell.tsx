@@ -11,12 +11,15 @@ import {
   LogOut,
   Menu,
   Search,
+  Settings,
   Sparkles,
+  UserPlus,
   UserRound,
   Users,
   X,
 } from "lucide-react";
-import { dashboardPath, getUser, logout, Role, User } from "@/lib/api";
+import { dashboardPath, getUser, logout, Role, saveUser, User } from "@/lib/api";
+import UserAvatar from "@/components/UserAvatar";
 import { Logo, Spinner } from "@/components/ui";
 
 type NavItem = { href: string; label: string; icon: React.ElementType; soon?: boolean };
@@ -28,27 +31,41 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/student/profile", label: "My Profile", icon: UserRound },
     { href: "#", label: "Similarity Check", icon: Sparkles, soon: true },
     { href: "#", label: "Find Partners", icon: Users, soon: true },
+    { href: "/dashboard/account", label: "Account", icon: Settings },
   ],
   faculty: [
     { href: "/dashboard/faculty", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/faculty/projects", label: "Manage Projects", icon: FolderKanban },
     { href: "/dashboard/faculty/projects/new", label: "Add Project", icon: FilePlus2 },
+    { href: "/dashboard/account", label: "Account", icon: Settings },
+  ],
+  admin: [
+    { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
+    { href: "/dashboard/admin/users", label: "Users", icon: Users },
+    { href: "/dashboard/admin/faculty/new", label: "Add Faculty", icon: UserPlus },
+    { href: "/dashboard/faculty/projects", label: "Projects", icon: FolderKanban },
+    { href: "/dashboard/account", label: "Account", icon: Settings },
   ],
 };
 
-const UserContext = createContext<User | null>(null);
+const UserContext = createContext<{ user: User; updateUser: (user: User) => void } | null>(null);
 
-export function useCurrentUser() {
-  const user = useContext(UserContext);
-  if (!user) throw new Error("useCurrentUser must be used inside AppShell");
-  return user;
+function useUserContext() {
+  const context = useContext(UserContext);
+  if (!context) throw new Error("User hooks must be used inside AppShell");
+  return context;
 }
 
-export default function AppShell({ role, children }: { role?: Role; children: React.ReactNode }) {
+export const useCurrentUser = () => useUserContext().user;
+
+export const useUpdateUser = () => useUserContext().updateUser;
+
+export default function AppShell({ allow, children }: { allow?: Role[]; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const allowedRoles = allow?.join(",");
 
   useEffect(() => {
     const u = getUser();
@@ -56,12 +73,16 @@ export default function AppShell({ role, children }: { role?: Role; children: Re
       router.replace("/login");
       return;
     }
-    if (role && u.role !== role) {
+    if (u.mustChangePassword) {
+      router.replace("/change-password");
+      return;
+    }
+    if (allowedRoles && !allowedRoles.split(",").includes(u.role)) {
       router.replace(dashboardPath(u.role));
       return;
     }
     setUser(u);
-  }, [role, router]);
+  }, [allowedRoles, router]);
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
@@ -71,6 +92,11 @@ export default function AppShell({ role, children }: { role?: Role; children: Re
   const active = nav
     .filter((i) => !i.soon && (pathname === i.href || pathname.startsWith(i.href + "/")))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
+  const updateUser = (updated: User) => {
+    saveUser(updated);
+    setUser(updated);
+  };
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -111,9 +137,7 @@ export default function AppShell({ role, children }: { role?: Role; children: Re
 
       <div className="border-t border-slate-200 p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
-            {user.name.charAt(0).toUpperCase()}
-          </span>
+          <UserAvatar name={user.name} avatar={user.avatar} size={36} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-slate-900">{user.name}</p>
             <p className="truncate text-xs capitalize text-slate-500">{user.role}</p>
@@ -134,7 +158,7 @@ export default function AppShell({ role, children }: { role?: Role; children: Re
   );
 
   return (
-    <UserContext.Provider value={user}>
+    <UserContext.Provider value={{ user, updateUser }}>
       <div className="min-h-screen">
         <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-200 bg-white lg:block">{sidebar}</aside>
 
