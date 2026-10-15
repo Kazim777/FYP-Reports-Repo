@@ -80,17 +80,33 @@ const projects = [
   },
 ];
 
-async function upsertUser({ name, email, role }) {
+async function upsertUser({ name, email, role, avatar }) {
   return prisma.user.upsert({
     where: { email },
-    update: {},
-    create: { name, email, role, passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10) },
+    update: { avatar },
+    create: { name, email, role, avatar, passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10) },
   });
 }
 
 async function main() {
-  const faculty = await upsertUser({ name: 'Dr. Adeel Ansari', email: 'faculty@demo.com', role: 'faculty' });
-  const student = await upsertUser({ name: 'Syed Kazim Hussain', email: 'student@demo.com', role: 'student' });
+  const faculty = await upsertUser({
+    name: 'Dr. Adeel Ansari',
+    email: 'faculty@demo.com',
+    role: 'faculty',
+    avatar: 'avatar4',
+  });
+  const student = await upsertUser({
+    name: 'Syed Kazim Hussain',
+    email: 'student@demo.com',
+    role: 'student',
+    avatar: 'avatar1',
+  });
+  await upsertUser({
+    name: 'System Admin',
+    email: 'admin@demo.com',
+    role: 'admin',
+    avatar: 'avatar7',
+  });
 
   await prisma.studentProfile.upsert({
     where: { userId: student.id },
@@ -113,7 +129,7 @@ async function main() {
   });
 
   console.log(`Seeded ${projects.length} projects.`);
-  console.log(`Demo logins (password "${DEMO_PASSWORD}"): faculty@demo.com, student@demo.com`);
+  console.log(`Demo logins (password "${DEMO_PASSWORD}"): admin@demo.com, faculty@demo.com, student@demo.com`);
 }
 
 main()

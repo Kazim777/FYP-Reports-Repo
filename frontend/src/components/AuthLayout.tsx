@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/ui";
 
@@ -10,15 +11,19 @@ const points = [
 export default function AuthLayout({
   title,
   subtitle,
+  eyebrow,
+  wide,
   children,
 }: {
   title: string;
   subtitle: string;
+  eyebrow?: string;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-brand-900 p-12 text-white lg:flex">
+      <div className="hidden flex-col justify-between bg-brand-900 p-12 text-white lg:sticky lg:top-0 lg:flex lg:h-screen">
         <Logo inverted />
         <div>
           <h2 className="text-3xl font-semibold leading-tight tracking-tight">
@@ -37,8 +42,9 @@ export default function AuthLayout({
       </div>
 
       <div className="flex items-center justify-center bg-white px-4 py-12 sm:px-8">
-        <div className="w-full max-w-sm">
+        <div className={clsx("w-full", wide ? "max-w-lg" : "max-w-sm")}>
           <Logo className="mb-10 lg:hidden" />
+          {eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-600">{eyebrow}</p>}
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
           <p className="mt-1.5 text-sm text-slate-500">{subtitle}</p>
           <div className="mt-8">{children}</div>

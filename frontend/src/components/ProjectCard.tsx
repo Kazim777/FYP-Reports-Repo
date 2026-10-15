@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, UserRound } from "lucide-react";
+import { CalendarDays, FileText, UserRound } from "lucide-react";
 import { Project } from "@/lib/api";
 import { Badge } from "@/components/ui";
 
@@ -22,11 +22,20 @@ export default function ProjectCard({ project }: { project: Project }) {
       <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-slate-600">
         {project.abstract || "No abstract provided."}
       </p>
-      {project.supervisor && (
-        <p className="mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500">
-          <UserRound className="size-3.5" />
-          {project.supervisor}
-        </p>
+      {(project.supervisor || project.pdfName) && (
+        <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+          {project.supervisor && (
+            <span className="flex min-w-0 items-center gap-1.5">
+              <UserRound className="size-3.5 shrink-0" />
+              <span className="truncate">{project.supervisor}</span>
+            </span>
+          )}
+          {project.pdfName && (
+            <span className="ml-auto flex shrink-0 items-center gap-1 text-red-600">
+              <FileText className="size-3.5" /> Report
+            </span>
+          )}
+        </div>
       )}
     </Link>
   );

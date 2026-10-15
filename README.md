@@ -6,7 +6,7 @@ Team: Syed Kazim Hussain (2312219), Muneeb Ur Rehman (2312207) · Supervisor: Dr
 ## Tech stack
 
 - **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS
-- **Backend:** Node.js, Express 5, Prisma ORM, Zod validation, JWT auth
+- **Backend:** Node.js, Express 5, Prisma ORM, Zod validation, JWT auth, Multer + pdf-parse for PDF reports
 - **Database:** PostgreSQL
 
 ## Structure
@@ -60,7 +60,17 @@ npm run db:seed       # optional: demo data
 npm run dev           # http://localhost:5000/api/health
 ```
 
-Demo logins after seeding (password `demo1234`): `faculty@demo.com`, `student@demo.com`
+Demo logins after seeding (password `demo1234`): `admin@demo.com`, `faculty@demo.com`, `student@demo.com`
+
+### Accounts and roles
+
+| Role | How the account is created | Lands on |
+|---|---|---|
+| Student | Public sign-up at `/register` (picks skills during sign-up) | `/dashboard/student` |
+| Faculty | Created by an admin from **Add Faculty** (temporary password) | `/dashboard/faculty` |
+| Admin | Terminal only: `npm run create-admin -- --name "Full Name" --email admin@example.com` | `/dashboard/admin` |
+
+Everyone uses the same `/login` page. Accounts created with a temporary password must choose a new one at `/change-password` before they can use the app.
 
 ### Frontend
 ```bash
@@ -90,6 +100,18 @@ npm run dev           # http://localhost:3000
 | GET | `/api/projects/:id` | Logged in |
 | POST | `/api/projects` | Faculty |
 | PUT / DELETE | `/api/projects/:id` | Faculty |
+| GET | `/api/projects/:id/pdf` | Logged in |
+| POST | `/api/projects/:id/pdf` (form field `pdf`, max 15 MB) | Faculty |
+| DELETE | `/api/projects/:id/pdf` | Faculty |
 | GET / PUT | `/api/profiles/me` | Student |
+| PATCH | `/api/auth/me` (name, avatar) | Logged in |
+| POST | `/api/auth/change-password` | Logged in |
+| GET | `/api/admin/stats` | Admin |
+| GET | `/api/admin/users?q=&role=` | Admin |
+| POST | `/api/admin/users/faculty` | Admin |
+| POST | `/api/admin/users/:id/reset-password` | Admin |
+| DELETE | `/api/admin/users/:id` | Admin |
+
+Project create / edit / delete and PDF upload are allowed for both Faculty and Admin.
 
 Errors always come back as `{ "message": "..." }` with a matching HTTP status.

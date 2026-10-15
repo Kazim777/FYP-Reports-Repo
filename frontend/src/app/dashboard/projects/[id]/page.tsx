@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { ArrowLeft, CalendarDays, Pencil, UserRound, Users } from "lucide-react";
 import { api, Project } from "@/lib/api";
 import { useCurrentUser } from "@/components/AppShell";
+import ReportCard from "@/components/ReportCard";
 import { Alert, Badge, ButtonLink, Card, Spinner } from "@/components/ui";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const user = useCurrentUser();
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState("");
@@ -24,15 +25,16 @@ export default function ProjectDetailPage() {
   if (!project) return <Spinner />;
 
   const team = project.teamMembers;
+  const canManage = user.role !== "student";
 
   return (
     <div className="mx-auto max-w-4xl">
-      <button
-        onClick={() => router.back()}
-        className="mb-6 flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900"
+      <Link
+        href={canManage ? "/dashboard/faculty/projects" : "/dashboard/student/search"}
+        className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900"
       >
-        <ArrowLeft className="size-4" /> Back
-      </button>
+        <ArrowLeft className="size-4" /> {canManage ? "All projects" : "Back to search"}
+      </Link>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -42,7 +44,7 @@ export default function ProjectDetailPage() {
           </div>
           <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{project.title}</h1>
         </div>
-        {user.role === "faculty" && (
+        {canManage && (
           <ButtonLink href={`/dashboard/faculty/projects/${project.id}/edit`} variant="secondary">
             <Pencil className="size-4" /> Edit
           </ButtonLink>
@@ -57,25 +59,28 @@ export default function ProjectDetailPage() {
           </p>
         </Card>
 
-        <Card className="h-fit divide-y divide-slate-100">
-          <Detail icon={UserRound} label="Supervisor" value={project.supervisor || "—"} />
-          <Detail icon={CalendarDays} label="Year" value={project.year ?? "—"} />
-          <div className="flex gap-3 p-5">
-            <Users className="mt-0.5 size-4 text-slate-400" />
-            <div>
-              <p className="text-xs text-slate-500">Team</p>
-              {team.length ? (
-                <ul className="mt-1 space-y-0.5 text-sm font-medium text-slate-900">
-                  {team.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm font-medium text-slate-900">—</p>
-              )}
+        <div className="space-y-6">
+          <ReportCard project={project} canEdit={canManage} />
+          <Card className="divide-y divide-slate-100">
+            <Detail icon={UserRound} label="Supervisor" value={project.supervisor || "—"} />
+            <Detail icon={CalendarDays} label="Year" value={project.year ?? "—"} />
+            <div className="flex gap-3 p-5">
+              <Users className="mt-0.5 size-4 text-slate-400" />
+              <div>
+                <p className="text-xs text-slate-500">Team</p>
+                {team.length ? (
+                  <ul className="mt-1 space-y-0.5 text-sm font-medium text-slate-900">
+                    {team.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm font-medium text-slate-900">—</p>
+                )}
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );

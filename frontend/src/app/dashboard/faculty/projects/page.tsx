@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FolderKanban, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { FileText, FolderKanban, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { api, Project } from "@/lib/api";
 import { Alert, Badge, ButtonLink, Card, EmptyState, Input, PageHeader, Spinner } from "@/components/ui";
 
@@ -79,6 +79,7 @@ export default function ManageProjectsPage() {
                   <th className="px-5 py-3 font-medium">Domain</th>
                   <th className="px-5 py-3 font-medium">Year</th>
                   <th className="px-5 py-3 font-medium">Supervisor</th>
+                  <th className="px-5 py-3 font-medium">Report</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
@@ -93,6 +94,15 @@ export default function ManageProjectsPage() {
                     <td className="px-5 py-4">{p.domain ? <Badge tone="brand">{p.domain}</Badge> : "—"}</td>
                     <td className="px-5 py-4 text-slate-600">{p.year ?? "—"}</td>
                     <td className="px-5 py-4 text-slate-600">{p.supervisor ?? "—"}</td>
+                    <td className="px-5 py-4">
+                      {p.pdfName ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
+                          <FileText className="size-3.5" /> PDF
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">None</span>
+                      )}
+                    </td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-1">
                         <Link
