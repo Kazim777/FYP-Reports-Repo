@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { ApiError } from '../../lib/ApiError.js';
-import { removeUpload } from '../../lib/storage.js';
+import { removeStoredFile } from '../../lib/storage.js';
 
 const reportSummary = { select: { pageCount: true, wordCount: true, extractedAt: true } };
 
@@ -41,5 +41,5 @@ export async function updateProject(id, data) {
 export async function deleteProject(id) {
   const project = await getProject(id);
   await prisma.project.delete({ where: { id } });
-  await removeUpload(project.pdfPath);
+  await removeStoredFile(project.pdfPath);
 }

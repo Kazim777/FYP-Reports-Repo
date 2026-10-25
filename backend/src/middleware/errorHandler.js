@@ -1,8 +1,6 @@
-import multer from 'multer';
 import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
 import { ApiError } from '../lib/ApiError.js';
-import { MAX_PDF_SIZE_MB } from './upload.js';
 
 const PRISMA_ERRORS = {
   P2002: [409, 'A record with this value already exists'],
@@ -24,14 +22,13 @@ export function errorHandler(err, req, res, next) {
     return res.status(400).json({ message: field ? `${field}: ${issue.message}` : issue.message });
   }
 
-  if (err instanceof multer.MulterError) {
-    const message = err.code === 'LIMIT_FILE_SIZE' ? `PDF must be ${MAX_PDF_SIZE_MB} MB or smaller` : err.message;
-    return res.status(400).json({ message });
-  }
-
   if (err instanceof Prisma.PrismaClientKnownRequestError && PRISMA_ERRORS[err.code]) {
     const [status, message] = PRISMA_ERRORS[err.code];
     return res.status(status).json({ message });
+  }
+
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ message: 'Request body is not valid JSON' });
   }
 
   console.error(err);

@@ -1,20 +1,26 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
-const schema = z.object({
-  PORT: z.coerce.number().int().positive().default(5000),
-  DATABASE_URL: z.string().url(),
-  JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
-  JWT_EXPIRES_IN: z.string().default('1d'),
-  CLIENT_URL: z.string().url().default('http://localhost:3000'),
-});
+const schema = z
+  .object({
+    PORT: z.coerce.number().int().positive().default(5000),
+    DATABASE_URL: z.string().url(),
+    JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
+    JWT_EXPIRES_IN: z.string().default('1d'),
+    CLIENT_URL: z.string().url().default('http://localhost:3000'),
+    BLOB_READ_WRITE_TOKEN: z.string().optional(),
+    BLOB_STORE_ID: z.string().optional(),
+  })
+  .refine((vars) => vars.BLOB_READ_WRITE_TOKEN || vars.BLOB_STORE_ID, {
+    path: ['BLOB_READ_WRITE_TOKEN'],
+    message: 'is required: create a Vercel Blob store and copy its read-write token',
+  });
 
 const parsed = schema.safeParse(process.env);
 
 if (!parsed.success) {
   const problems = parsed.error.issues.map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`);
-  console.error(`Invalid backend/.env configuration:\n${problems.join('\n')}`);
-  process.exit(1);
+  throw new Error(`Invalid backend environment configuration:\n${problems.join('\n')}`);
 }
 
 export const env = {

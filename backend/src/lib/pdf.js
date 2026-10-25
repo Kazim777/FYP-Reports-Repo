@@ -1,3 +1,4 @@
+import 'pdf-parse/worker';
 import { PDFParse } from 'pdf-parse';
 
 const ROMAN_NUMERAL = '(?=[ivxlc])c{0,3}(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})';

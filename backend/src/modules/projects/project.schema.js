@@ -11,3 +11,8 @@ export const createProjectSchema = z.object({
 });
 
 export const updateProjectSchema = createProjectSchema.partial();
+
+export const attachPdfSchema = z.object({
+  pathname: z.string().min(1).max(200),
+  fileName: z.string().trim().min(1).max(255),
+});

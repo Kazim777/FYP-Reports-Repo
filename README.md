@@ -89,6 +89,29 @@ npm run dev           # http://localhost:3000
 | Browse data in the browser | `npm run db:studio` |
 | Reset demo data | `npm run db:seed` |
 
+## Deployment (Vercel)
+
+The repo deploys as **one Vercel project with two services** (see `vercel.json`):
+
+| Service | Folder | Public path |
+|---|---|---|
+| `frontend` | `frontend/` (Next.js) | `/` |
+| `backend` | `backend/` (Express, entry `src/app.js`) | `/api/*` |
+
+PDF reports are stored in a **private Vercel Blob store**. The browser uploads directly to Blob with a short-lived signed URL, and reports are opened with a 10-minute signed link, so files never pass through the 4.5 MB function limit and are never public.
+
+Environment variables (Project → Settings → Environment Variables):
+
+| Name | Value |
+|---|---|
+| `DATABASE_URL` | Neon **pooled** connection string (host contains `-pooler`) |
+| `DIRECT_URL` | Neon **direct** connection string (used for migrations) |
+| `JWT_SECRET` | Random string, 32+ characters |
+| `CLIENT_URL` | The deployed URL, e.g. `https://fyp-hub.vercel.app` |
+| `BLOB_READ_WRITE_TOKEN` | Added automatically when a Blob store is connected to the project |
+
+Database migrations are not run during the build. After changing the schema, run `npm run db:deploy` in `backend/` against the production database.
+
 ## API
 
 | Method | Endpoint | Access |
@@ -100,9 +123,10 @@ npm run dev           # http://localhost:3000
 | GET | `/api/projects/:id` | Logged in |
 | POST | `/api/projects` | Faculty |
 | PUT / DELETE | `/api/projects/:id` | Faculty |
-| GET | `/api/projects/:id/pdf` | Logged in |
-| POST | `/api/projects/:id/pdf` (form field `pdf`, max 15 MB) | Faculty |
-| DELETE | `/api/projects/:id/pdf` | Faculty |
+| GET | `/api/projects/:id/pdf` (returns a 10-minute signed link) | Logged in |
+| POST | `/api/projects/:id/pdf/upload-url` (signed upload URL, max 15 MB) | Faculty, Admin |
+| POST | `/api/projects/:id/pdf` (`{ pathname, fileName }` after uploading) | Faculty, Admin |
+| DELETE | `/api/projects/:id/pdf` | Faculty, Admin |
 | GET / PUT | `/api/profiles/me` | Student |
 | PATCH | `/api/auth/me` (name, avatar) | Logged in |
 | POST | `/api/auth/change-password` | Logged in |
