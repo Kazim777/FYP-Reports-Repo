@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export type Role = "student" | "faculty" | "admin";
 
@@ -105,11 +105,10 @@ export function logout() {
 
 async function request(path: string, options: RequestInit = {}) {
   const token = getToken();
-  const isForm = options.body instanceof FormData;
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      ...(isForm ? {} : { "Content-Type": "application/json" }),
+      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -133,17 +132,29 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   return (await res.json()) as T;
 }
 
-export function uploadProjectPdf(projectId: number, file: File) {
-  const form = new FormData();
-  form.append("pdf", file);
-  return api<PdfUploadResult>(`/projects/${projectId}/pdf`, { method: "POST", body: form });
+export async function uploadProjectPdf(projectId: number, file: File) {
+  const { uploadUrl, pathname } = await api<{ uploadUrl: string; pathname: string }>(
+    `/projects/${projectId}/pdf/upload-url`,
+    { method: "POST" }
+  );
+
+  const upload = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "application/pdf" },
+    body: file,
+  });
+  if (!upload.ok) throw new Error("The PDF could not be uploaded. Please try again.");
+
+  return api<PdfUploadResult>(`/projects/${projectId}/pdf`, {
+    method: "POST",
+    body: JSON.stringify({ pathname, fileName: file.name }),
+  });
 }
 
 export async function openProjectPdf(projectId: number) {
   const tab = window.open("", "_blank");
   try {
-    const blob = await (await request(`/projects/${projectId}/pdf`)).blob();
-    const url = URL.createObjectURL(blob);
+    const { url } = await api<{ url: string }>(`/projects/${projectId}/pdf`);
     if (tab) tab.location.href = url;
     else window.location.href = url;
   } catch (err) {

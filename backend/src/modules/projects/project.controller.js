@@ -23,8 +23,12 @@ export async function remove(req, res) {
   res.status(204).end();
 }
 
-export async function uploadPdf(req, res) {
-  res.json(await projectPdfService.attachPdf(req.projectId, req.file));
+export async function createPdfUpload(req, res) {
+  res.json(await projectPdfService.createUploadTarget(req.projectId));
+}
+
+export async function attachPdf(req, res) {
+  res.json(await projectPdfService.attachPdf(req.projectId, req.body));
 }
 
 export async function removePdf(req, res) {
@@ -33,7 +37,5 @@ export async function removePdf(req, res) {
 }
 
 export async function viewPdf(req, res) {
-  const { path, name } = await projectPdfService.getPdfFile(req.projectId);
-  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(name)}`);
-  res.type('pdf').sendFile(path);
+  res.json({ url: await projectPdfService.getPdfViewUrl(req.projectId) });
 }
