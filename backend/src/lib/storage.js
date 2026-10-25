@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import { del, get, issueSignedToken, presignUrl } from '@vercel/blob';
+import { env } from '../config/env.js';
+import { ApiError } from './ApiError.js';
 
 export const MAX_PDF_SIZE_MB = 15;
 export const MAX_PDF_SIZE_BYTES = MAX_PDF_SIZE_MB * 1024 * 1024;
@@ -13,7 +15,14 @@ export const newReportPath = (projectId) => `reports/${projectId}/${crypto.rando
 export const isReportPathOf = (projectId, pathname) =>
   new RegExp(`^reports/${projectId}/${UUID_PATTERN}\\.pdf$`).test(pathname);
 
+function assertStorageConfigured() {
+  if (!env.blobStorageConfigured) {
+    throw new ApiError(503, 'PDF storage is not configured yet. Add BLOB_READ_WRITE_TOKEN to the backend .env file.');
+  }
+}
+
 async function signUrl(pathname, operation, putOptions = {}) {
+  assertStorageConfigured();
   const validUntil = Date.now() + LINK_LIFETIME_MS;
   const token = await issueSignedToken({ pathname, operations: [operation], validUntil, ...putOptions });
   const { presignedUrl } = await presignUrl(token, { operation, pathname, access: 'private', validUntil, ...putOptions });
@@ -26,13 +35,14 @@ export const createPdfUploadUrl = (pathname) =>
 export const createPdfViewUrl = (pathname) => signUrl(pathname, 'get');
 
 export async function readStoredFile(pathname) {
+  assertStorageConfigured();
   const result = await get(pathname, { access: 'private', useCache: false });
   if (result?.statusCode !== 200) return null;
   return { buffer: Buffer.from(await new Response(result.stream).arrayBuffer()), size: result.blob.size };
 }
 
 export async function removeStoredFile(pathname) {
-  if (!pathname) return;
+  if (!pathname || !env.blobStorageConfigured) return;
   try {
     await del(pathname);
   } catch (err) {
