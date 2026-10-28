@@ -2,6 +2,9 @@ export const ErrorCode = {
   UNAUTHENTICATED: 'UNAUTHENTICATED',
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   PASSWORD_CHANGE_REQUIRED: 'PASSWORD_CHANGE_REQUIRED',
+  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
+  ACCOUNT_DEACTIVATED: 'ACCOUNT_DEACTIVATED',
+  RATE_LIMITED: 'RATE_LIMITED',
 };
 
 export class ApiError extends Error {
@@ -29,5 +32,9 @@ export class ApiError extends Error {
 
   static conflict(message = 'Conflict') {
     return new ApiError(409, message);
+  }
+
+  static tooManyRequests(message = 'Too many requests. Please try again later.') {
+    return new ApiError(429, message, ErrorCode.RATE_LIMITED);
   }
 }

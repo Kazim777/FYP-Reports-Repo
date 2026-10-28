@@ -14,6 +14,19 @@ export const publicUser = {
 
 const sessionUser = { ...publicUser, tokenVersion: true };
 
+const PLACEHOLDER_PASSWORD_HASH = '$2b$10$izJQp.M/tXFi8xc69GJBpO5BPZO7ZpMpNVrv5UabhR4E71yH97UQO';
+
+const BLOCKED_STATUSES = {
+  pending: {
+    code: ErrorCode.EMAIL_NOT_VERIFIED,
+    message: 'Please verify your email address before logging in.',
+  },
+  deactivated: {
+    code: ErrorCode.ACCOUNT_DEACTIVATED,
+    message: 'Your account has been deactivated. Please contact the administrator.',
+  },
+};
+
 export async function assertEmailAvailable(email) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw ApiError.conflict('Email already registered');
@@ -37,9 +50,13 @@ export async function register({ name, email, password, avatar, skills, technolo
 
 export async function login({ email, password }) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  const passwordMatches = await verifyPassword(password, user?.passwordHash ?? PLACEHOLDER_PASSWORD_HASH);
+  if (!user || !passwordMatches) {
     throw ApiError.unauthorized('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
   }
+
+  const blocked = BLOCKED_STATUSES[user.status];
+  if (blocked) throw ApiError.forbidden(blocked.message, blocked.code);
 
   return prisma.user.update({
     where: { id: user.id },
