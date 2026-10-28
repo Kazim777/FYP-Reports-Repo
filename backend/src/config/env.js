@@ -20,6 +20,7 @@ if (!parsed.success) {
 
 export const env = {
   isProduction: parsed.data.NODE_ENV === 'production',
+  isTest: parsed.data.NODE_ENV === 'test',
   port: parsed.data.PORT,
   databaseUrl: parsed.data.DATABASE_URL,
   jwtSecret: parsed.data.JWT_SECRET,

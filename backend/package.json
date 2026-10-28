@@ -12,7 +12,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "create-admin": "node scripts/create-admin.js"
+    "create-admin": "node scripts/create-admin.js",
+    "test": "vitest run"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -25,6 +26,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
     "jsonwebtoken": "^9.0.3",
     "pdf-parse": "^2.4.5",
     "pg": "^8.23.1",
@@ -32,6 +34,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "prisma": "^6.19.3"
+    "prisma": "^6.19.3",
+    "supertest": "^7.3.1",
+    "vitest": "^3.2.7"
   }
 }

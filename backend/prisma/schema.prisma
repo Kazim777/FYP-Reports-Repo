@@ -26,20 +26,18 @@ enum AuthTokenType {
 }
 
 model User {
-  id                  Int        @id @default(autoincrement())
-  name                String     @db.VarChar(120)
-  email               String     @unique @db.VarChar(160)
-  passwordHash        String     @map("password_hash")
-  role                Role
-  avatar              String?    @db.VarChar(40)
-  status              UserStatus @default(active)
-  mustChangePassword  Boolean    @default(false) @map("must_change_password")
-  failedLoginAttempts Int        @default(0) @map("failed_login_attempts")
-  lockedUntil         DateTime?  @map("locked_until")
-  tokenVersion        Int        @default(0) @map("token_version")
-  lastLoginAt         DateTime?  @map("last_login_at")
-  createdAt           DateTime   @default(now()) @map("created_at")
-  updatedAt           DateTime   @updatedAt @map("updated_at")
+  id                 Int        @id @default(autoincrement())
+  name               String     @db.VarChar(120)
+  email              String     @unique @db.VarChar(160)
+  passwordHash       String     @map("password_hash")
+  role               Role
+  avatar             String?    @db.VarChar(40)
+  status             UserStatus @default(active)
+  mustChangePassword Boolean    @default(false) @map("must_change_password")
+  tokenVersion       Int        @default(0) @map("token_version")
+  lastLoginAt        DateTime?  @map("last_login_at")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
 
   studentProfile   StudentProfile?
   facultyProfile   FacultyProfile?
