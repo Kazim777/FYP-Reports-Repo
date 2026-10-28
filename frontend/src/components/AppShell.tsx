@@ -18,9 +18,9 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { dashboardPath, getUser, logout, Role, saveUser, User } from "@/lib/api";
+import { api, logout, Role, User } from "@/lib/api";
 import UserAvatar from "@/components/UserAvatar";
-import { Logo, Spinner } from "@/components/ui";
+import { Alert, Button, Logo, Spinner } from "@/components/ui";
 
 type NavItem = { href: string; label: string; icon: React.ElementType; soon?: boolean };
 
@@ -60,43 +60,31 @@ export const useCurrentUser = () => useUserContext().user;
 
 export const useUpdateUser = () => useUserContext().updateUser;
 
-export default function AppShell({ allow, children }: { allow?: Role[]; children: React.ReactNode }) {
+export default function AppShell({ role, children }: { role: Role; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const allowedRoles = allow?.join(",");
 
   useEffect(() => {
-    const u = getUser();
-    if (!u) {
-      router.replace("/login");
-      return;
-    }
-    if (u.mustChangePassword) {
-      router.replace("/change-password");
-      return;
-    }
-    if (allowedRoles && !allowedRoles.split(",").includes(u.role)) {
-      router.replace(dashboardPath(u.role));
-      return;
-    }
-    setUser(u);
-  }, [allowedRoles, router]);
+    api<{ user: User }>("/auth/me")
+      .then(({ user }) => setUser(user))
+      .catch((err) => setLoadError(err.message));
+  }, []);
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
-  if (!user) return <Spinner className="min-h-screen" />;
-
-  const nav = NAV[user.role];
+  const nav = NAV[user?.role ?? role];
   const active = nav
-    .filter((i) => !i.soon && (pathname === i.href || pathname.startsWith(i.href + "/")))
+    .filter((item) => !item.soon && (pathname === item.href || pathname.startsWith(`${item.href}/`)))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
-  const updateUser = (updated: User) => {
-    saveUser(updated);
-    setUser(updated);
-  };
+  async function handleLogout() {
+    await logout().catch(() => undefined);
+    router.replace("/login");
+    router.refresh();
+  }
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -137,16 +125,22 @@ export default function AppShell({ allow, children }: { allow?: Role[]; children
 
       <div className="border-t border-slate-200 p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-          <UserAvatar name={user.name} avatar={user.avatar} size={36} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">{user.name}</p>
-            <p className="truncate text-xs capitalize text-slate-500">{user.role}</p>
-          </div>
+          {user ? (
+            <>
+              <UserAvatar name={user.name} avatar={user.avatar} size={36} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-900">{user.name}</p>
+                <p className="truncate text-xs capitalize text-slate-500">{user.role}</p>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-1 items-center gap-3">
+              <span className="size-9 animate-pulse rounded-full bg-slate-100" />
+              <span className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+            </div>
+          )}
           <button
-            onClick={() => {
-              logout();
-              router.push("/login");
-            }}
+            onClick={handleLogout}
             className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
             title="Log out"
           >
@@ -157,36 +151,48 @@ export default function AppShell({ allow, children }: { allow?: Role[]; children
     </div>
   );
 
-  return (
-    <UserContext.Provider value={{ user, updateUser }}>
-      <div className="min-h-screen">
-        <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-200 bg-white lg:block">{sidebar}</aside>
-
-        {mobileOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <div className="absolute inset-0 bg-slate-900/30" onClick={() => setMobileOpen(false)} />
-            <aside className="relative h-full w-64 bg-white shadow-xl">
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="absolute right-3 top-4 rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
-              >
-                <X className="size-5" />
-              </button>
-              {sidebar}
-            </aside>
-          </div>
-        )}
-
-        <div className="lg:pl-64">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur lg:hidden">
-            <button onClick={() => setMobileOpen(true)} className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100">
-              <Menu className="size-5" />
-            </button>
-            <Logo />
-          </header>
-          <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
-        </div>
+  let content: React.ReactNode = <Spinner />;
+  if (user) {
+    content = <UserContext.Provider value={{ user, updateUser: setUser }}>{children}</UserContext.Provider>;
+  } else if (loadError) {
+    content = (
+      <div className="mx-auto max-w-md space-y-4 py-16">
+        <Alert>{loadError}</Alert>
+        <Button variant="secondary" onClick={() => window.location.reload()}>
+          Try again
+        </Button>
       </div>
-    </UserContext.Provider>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-200 bg-white lg:block">{sidebar}</aside>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-slate-900/30" onClick={() => setMobileOpen(false)} />
+          <aside className="relative h-full w-64 bg-white shadow-xl">
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute right-3 top-4 rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+            >
+              <X className="size-5" />
+            </button>
+            {sidebar}
+          </aside>
+        </div>
+      )}
+
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur lg:hidden">
+          <button onClick={() => setMobileOpen(true)} className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100">
+            <Menu className="size-5" />
+          </button>
+          <Logo />
+        </header>
+        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{content}</main>
+      </div>
+    </div>
   );
 }

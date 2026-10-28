@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -14,37 +14,84 @@ enum Role {
   admin
 }
 
-model User {
-  id                 Int      @id @default(autoincrement())
-  name               String   @db.VarChar(120)
-  email              String   @unique @db.VarChar(160)
-  passwordHash       String   @map("password_hash")
-  role               Role
-  avatar             String?  @db.VarChar(40)
-  mustChangePassword Boolean  @default(false) @map("must_change_password")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+enum UserStatus {
+  pending
+  active
+  deactivated
+}
 
-  profile          StudentProfile?
+enum AuthTokenType {
+  email_verification
+  password_reset
+}
+
+model User {
+  id                  Int        @id @default(autoincrement())
+  name                String     @db.VarChar(120)
+  email               String     @unique @db.VarChar(160)
+  passwordHash        String     @map("password_hash")
+  role                Role
+  avatar              String?    @db.VarChar(40)
+  status              UserStatus @default(active)
+  mustChangePassword  Boolean    @default(false) @map("must_change_password")
+  failedLoginAttempts Int        @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?  @map("locked_until")
+  tokenVersion        Int        @default(0) @map("token_version")
+  lastLoginAt         DateTime?  @map("last_login_at")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  studentProfile   StudentProfile?
+  facultyProfile   FacultyProfile?
+  authTokens       AuthToken[]
   uploadedProjects Project[]
 
   @@map("users")
 }
 
 model StudentProfile {
-  userId       Int      @id @map("user_id")
-  studentId    String?  @map("student_id") @db.VarChar(20)
-  department   String?  @db.VarChar(100)
-  bio          String?
-  skills       String[]
-  interests    String[]
-  technologies String[]
-  domains      String[]
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  userId            Int      @id @map("user_id")
+  studentId         String?  @unique @map("student_id") @db.VarChar(20)
+  department        String?  @db.VarChar(100)
+  bio               String?
+  skills            String[]
+  interests         String[]
+  technologies      String[]
+  domains           String[]
+  lookingForPartner Boolean  @default(false) @map("looking_for_partner")
+  showEmail         Boolean  @default(false) @map("show_email")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("student_profiles")
+}
+
+model FacultyProfile {
+  userId        Int      @id @map("user_id")
+  department    String?  @db.VarChar(100)
+  designation   String?  @db.VarChar(100)
+  researchAreas String[] @map("research_areas")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("faculty_profiles")
+}
+
+model AuthToken {
+  id        Int           @id @default(autoincrement())
+  userId    Int           @map("user_id")
+  type      AuthTokenType
+  tokenHash String        @unique @map("token_hash") @db.VarChar(128)
+  expiresAt DateTime      @map("expires_at")
+  usedAt    DateTime?     @map("used_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("auth_tokens")
 }
 
 model Project {

@@ -67,7 +67,11 @@ export async function resetPassword(id, adminId) {
   const temporaryPassword = generateTemporaryPassword();
   const user = await prisma.user.update({
     where: { id },
-    data: { passwordHash: await hashPassword(temporaryPassword), mustChangePassword: true },
+    data: {
+      passwordHash: await hashPassword(temporaryPassword),
+      mustChangePassword: true,
+      tokenVersion: { increment: 1 },
+    },
     select: publicUser,
   });
 

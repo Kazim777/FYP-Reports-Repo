@@ -6,7 +6,7 @@ Team: Syed Kazim Hussain (2312219), Muneeb Ur Rehman (2312207) · Supervisor: Dr
 ## Tech stack
 
 - **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS
-- **Backend:** Node.js, Express 5, Prisma ORM, Zod validation, JWT auth, Multer + pdf-parse for PDF reports
+- **Backend:** Node.js, Express 5, Prisma ORM, Zod validation, JWT in httpOnly cookies, pdf-parse for PDF reports
 - **Database:** PostgreSQL
 
 ## Structure
@@ -21,8 +21,10 @@ FYP-Reports-Repo/
 │       │       ├── student/          Overview, search, profile
 │       │       ├── faculty/          Overview, manage / add / edit projects
 │       │       └── projects/[id]/    Project details (both roles)
-│       ├── components/               AppShell (sidebar + role guard), ui.tsx (buttons, inputs, cards…)
-│       └── lib/api.ts                API client, types, session helpers
+│       ├── components/               AppShell (sidebar + current user), ui.tsx (buttons, inputs, cards…)
+│       ├── lib/api.ts                API client and types
+│       ├── lib/session.ts            Session cookie rules shared by middleware and pages
+│       └── middleware.ts             Route protection and role redirects (runs before pages render)
 │
 └── backend/
     ├── prisma/
@@ -71,6 +73,12 @@ Demo logins after seeding (password `demo1234`): `admin@demo.com`, `faculty@demo
 | Admin | Terminal only: `npm run create-admin -- --name "Full Name" --email admin@example.com` | `/dashboard/admin` |
 
 Everyone uses the same `/login` page. Accounts created with a temporary password must choose a new one at `/change-password` before they can use the app.
+
+### How sessions work
+- Logging in sets an **httpOnly cookie** (`fyp_session`) that lasts **3 hours**. JavaScript cannot read it.
+- **Next.js middleware** checks the cookie before a page renders: it redirects guests to `/login?next=…`, sends each role to its own dashboard, and forces `/change-password` when required.
+- Every API request is verified on the backend against the database, so logging out, changing a password, an admin password reset or deactivation ends existing sessions immediately.
+- Locally, `BACKEND_URL` in `frontend/.env.local` makes Next.js forward `/api` to the backend, so the frontend and API share one origin exactly like on Vercel.
 
 ### Frontend
 ```bash
@@ -138,4 +146,4 @@ Database migrations are not run during the build. After changing the schema, run
 
 Project create / edit / delete and PDF upload are allowed for both Faculty and Admin.
 
-Errors always come back as `{ "message": "..." }` with a matching HTTP status.
+Errors always come back as `{ "message": "...", "code"?: "..." }` with a matching HTTP status. `code` is set for cases the frontend reacts to, such as `UNAUTHENTICATED` or `PASSWORD_CHANGE_REQUIRED`.
