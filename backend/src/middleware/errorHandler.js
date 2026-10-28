@@ -13,7 +13,7 @@ export function notFound(req, res) {
 
 export function errorHandler(err, req, res, next) {
   if (err instanceof ApiError) {
-    return res.status(err.status).json({ message: err.message });
+    return res.status(err.status).json({ message: err.message, ...(err.code && { code: err.code }) });
   }
 
   if (err instanceof ZodError) {

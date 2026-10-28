@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { api, saveSession, dashboardPath, RegisterInput, User } from "@/lib/api";
+import { api, RegisterInput, User } from "@/lib/api";
+import { homePathFor } from "@/lib/session";
 import { INTEREST_OPTIONS, SKILL_OPTIONS, TECHNOLOGY_OPTIONS } from "@/lib/options";
 import AuthLayout from "@/components/AuthLayout";
 import AvatarPicker from "@/components/AvatarPicker";
@@ -34,12 +35,11 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      const { token, user } = await api<{ token: string; user: User }>("/auth/register", {
+      const { user } = await api<{ user: User }>("/auth/register", {
         method: "POST",
         body: JSON.stringify(form),
       });
-      saveSession(token, user);
-      router.push(dashboardPath(user.role));
+      router.replace(homePathFor(user.role));
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);

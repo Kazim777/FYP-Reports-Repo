@@ -111,7 +111,7 @@ async function main() {
     update: {},
     create: {
       userId: student.id,
-      studentId: '2312219',
+      studentId: 'DEMO-0001',
       department: 'Computer Science',
       bio: 'Full stack developer interested in AI powered web applications.',
       skills: ['Frontend development', 'UI design', 'Databases'],

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { dashboardPath, getUser, logout, saveUser, User } from "@/lib/api";
+import { api, logout, User } from "@/lib/api";
+import { homePathFor } from "@/lib/session";
 import AuthLayout from "@/components/AuthLayout";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
 import { Spinner } from "@/components/ui";
@@ -12,11 +13,13 @@ export default function ChangePasswordPage() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const current = getUser();
-    if (!current) router.replace("/login");
-    else if (!current.mustChangePassword) router.replace(dashboardPath(current.role));
-    else setUser(current);
-  }, [router]);
+    api<{ user: User }>("/auth/me").then(({ user }) => setUser(user));
+  }, []);
+
+  async function handleLogout() {
+    await logout().catch(() => undefined);
+    router.replace("/login");
+  }
 
   if (!user) return <Spinner className="min-h-screen" />;
 
@@ -28,17 +31,11 @@ export default function ChangePasswordPage() {
       <ChangePasswordForm
         currentLabel="Temporary password"
         submitLabel="Save and continue"
-        onChanged={(updated) => {
-          saveUser(updated);
-          router.replace(dashboardPath(updated.role));
-        }}
+        onChanged={(updated) => router.replace(homePathFor(updated.role))}
       />
       <button
         type="button"
-        onClick={() => {
-          logout();
-          router.replace("/login");
-        }}
+        onClick={handleLogout}
         className="mt-6 text-sm font-medium text-slate-500 hover:text-slate-900"
       >
         Log out instead

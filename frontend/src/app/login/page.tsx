@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, landingPath, saveSession, User } from "@/lib/api";
+import { api, User } from "@/lib/api";
+import { landingPathFor, safeNextPath } from "@/lib/session";
 import AuthLayout from "@/components/AuthLayout";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
@@ -19,12 +20,12 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const { token, user } = await api<{ token: string; user: User }>("/auth/login", {
+      const { user } = await api<{ user: User }>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      saveSession(token, user);
-      router.push(landingPath(user));
+      const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
+      router.replace(user.mustChangePassword || !next ? landingPathFor(user) : next);
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);

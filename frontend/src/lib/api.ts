@@ -1,6 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+import type { Role } from "@/lib/session";
 
-export type Role = "student" | "faculty" | "admin";
+export type { Role };
 
 export interface User {
   id: number;
@@ -78,50 +78,32 @@ export interface StudentProfile {
   domains: string[];
 }
 
-export function getToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string
+  ) {
+    super(message);
+  }
 }
 
-export function saveUser(user: User) {
-  localStorage.setItem("user", JSON.stringify(user));
-}
-
-export function saveSession(token: string, user: User) {
-  localStorage.setItem("token", token);
-  saveUser(user);
-}
-
-export function getUser(): User | null {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem("user");
-  return raw ? (JSON.parse(raw) as User) : null;
-}
-
-export function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+function redirectToLogin() {
+  if (window.location.pathname === "/login") return;
+  const next = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.assign(`/login?next=${next}`);
 }
 
 async function request(path: string, options: RequestInit = {}) {
-  const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`/api${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
+    headers: { "Content-Type": "application/json", ...options.headers },
   });
-
-  if (res.status === 401 && token) {
-    logout();
-    window.location.href = "/login";
-  }
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.message || "Request failed");
+    if (data.code === "UNAUTHENTICATED") redirectToLogin();
+    throw new ApiRequestError(data.message || "Request failed", res.status, data.code);
   }
   return res;
 }
@@ -171,6 +153,4 @@ export function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export const dashboardPath = (role: Role) => `/dashboard/${role}`;
-
-export const landingPath = (user: User) => (user.mustChangePassword ? "/change-password" : dashboardPath(user.role));
+export const logout = () => api<void>("/auth/logout", { method: "POST" });

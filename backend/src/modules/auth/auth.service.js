@@ -1,8 +1,6 @@
-import jwt from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma.js';
-import { ApiError } from '../../lib/ApiError.js';
+import { ApiError, ErrorCode } from '../../lib/ApiError.js';
 import { hashPassword, verifyPassword } from '../../lib/password.js';
-import { env } from '../../config/env.js';
 
 export const publicUser = {
   id: true,
@@ -14,8 +12,7 @@ export const publicUser = {
   createdAt: true,
 };
 
-const signToken = (user) =>
-  jwt.sign({ id: user.id, role: user.role }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+const sessionUser = { ...publicUser, tokenVersion: true };
 
 export async function assertEmailAvailable(email) {
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -25,28 +22,34 @@ export async function assertEmailAvailable(email) {
 export async function register({ name, email, password, avatar, skills, technologies, interests }) {
   await assertEmailAvailable(email);
 
-  const user = await prisma.user.create({
+  return prisma.user.create({
     data: {
       name,
       email,
       role: 'student',
       avatar,
       passwordHash: await hashPassword(password),
-      profile: { create: { skills, technologies, interests } },
+      studentProfile: { create: { skills, technologies, interests } },
     },
-    select: publicUser,
+    select: sessionUser,
   });
-  return { user, token: signToken(user) };
 }
 
 export async function login({ email, password }) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    throw ApiError.unauthorized('Invalid email or password');
+    throw ApiError.unauthorized('Invalid email or password', ErrorCode.INVALID_CREDENTIALS);
   }
 
-  const { passwordHash, updatedAt, ...safeUser } = user;
-  return { user: safeUser, token: signToken(user) };
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+    select: sessionUser,
+  });
+}
+
+export async function logout(userId) {
+  await prisma.user.updateMany({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
 }
 
 export async function getUserById(id) {
@@ -67,7 +70,11 @@ export async function changePassword(id, { currentPassword, newPassword }) {
 
   return prisma.user.update({
     where: { id },
-    data: { passwordHash: await hashPassword(newPassword), mustChangePassword: false },
-    select: publicUser,
+    data: {
+      passwordHash: await hashPassword(newPassword),
+      mustChangePassword: false,
+      tokenVersion: { increment: 1 },
+    },
+    select: sessionUser,
   });
 }
