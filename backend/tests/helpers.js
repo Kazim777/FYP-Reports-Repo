@@ -14,6 +14,17 @@ export function uniqueEmail(label = 'user') {
   return email;
 }
 
+export const uniqueStudentId = () => `T-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+
+export const registration = (overrides = {}) => ({
+  name: 'New Student',
+  email: uniqueEmail('register'),
+  studentId: uniqueStudentId(),
+  password: TEST_PASSWORD,
+  skills: ['APIs'],
+  ...overrides,
+});
+
 export async function createUser({ role = 'student', status = 'active', mustChangePassword = false } = {}) {
   return prisma.user.create({
     data: {

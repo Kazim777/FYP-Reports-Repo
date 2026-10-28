@@ -1,5 +1,14 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { TEST_PASSWORD, cleanupTestUsers, createUser, loginAs, newAgent, prisma, uniqueEmail } from './helpers.js';
+import {
+  TEST_PASSWORD,
+  cleanupTestUsers,
+  createUser,
+  loginAs,
+  newAgent,
+  prisma,
+  registration,
+  uniqueEmail,
+} from './helpers.js';
 
 afterAll(async () => {
   await cleanupTestUsers();
@@ -9,10 +18,7 @@ afterAll(async () => {
 describe('registration', () => {
   it('creates a student and starts a session in an httpOnly cookie', async () => {
     const agent = newAgent();
-    const res = await agent
-      .post('/api/auth/register')
-      .send({ name: 'New Student', email: uniqueEmail('register'), password: TEST_PASSWORD, skills: ['APIs'] })
-      .expect(201);
+    const res = await agent.post('/api/auth/register').send(registration()).expect(201);
 
     expect(res.body.user.role).toBe('student');
     expect(res.body).not.toHaveProperty('token');

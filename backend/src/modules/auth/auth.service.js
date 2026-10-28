@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { ApiError, ErrorCode } from '../../lib/ApiError.js';
 import { hashPassword, verifyPassword } from '../../lib/password.js';
+import { assertStudentIdAvailable } from '../profiles/profile.service.js';
 
 export const publicUser = {
   id: true,
@@ -32,8 +33,9 @@ export async function assertEmailAvailable(email) {
   if (existing) throw ApiError.conflict('Email already registered');
 }
 
-export async function register({ name, email, password, avatar, skills, technologies, interests }) {
+export async function register({ name, email, studentId, password, avatar, skills, technologies, interests }) {
   await assertEmailAvailable(email);
+  await assertStudentIdAvailable(studentId);
 
   return prisma.user.create({
     data: {
@@ -42,7 +44,7 @@ export async function register({ name, email, password, avatar, skills, technolo
       role: 'student',
       avatar,
       passwordHash: await hashPassword(password),
-      studentProfile: { create: { skills, technologies, interests } },
+      studentProfile: { create: { studentId, skills, technologies, interests } },
     },
     select: sessionUser,
   });
