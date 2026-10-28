@@ -34,5 +34,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  runtime: "nodejs",
   matcher: ["/dashboard/:path*", "/change-password", "/login", "/register"],
 };
