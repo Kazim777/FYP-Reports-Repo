@@ -74,11 +74,30 @@ Demo logins after seeding (password `demo1234`): `admin@demo.com`, `faculty@demo
 
 Everyone uses the same `/login` page. Accounts created with a temporary password must choose a new one at `/change-password` before they can use the app.
 
+- Students sign up with a **Student ID** (3–20 letters, numbers or hyphens, stored in upper case). Each ID can belong to only one account.
+- New and changed passwords need **at least 8 characters with a letter and a number**. Older passwords keep working until they are changed.
+
 ### How sessions work
 - Logging in sets an **httpOnly cookie** (`fyp_session`) that lasts **3 hours**. JavaScript cannot read it.
 - **Next.js middleware** checks the cookie before a page renders: it redirects guests to `/login?next=…`, sends each role to its own dashboard, and forces `/change-password` when required.
 - Every API request is verified on the backend against the database, so logging out, changing a password, an admin password reset or deactivation ends existing sessions immediately.
 - Locally, `BACKEND_URL` in `frontend/.env.local` makes Next.js forward `/api` to the backend, so the frontend and API share one origin exactly like on Vercel.
+- Login is refused for accounts whose email is not verified (`EMAIL_NOT_VERIFIED`) or that an admin deactivated (`ACCOUNT_DEACTIVATED`). These messages appear only after a correct password, so the form never reveals whether an email is registered.
+
+### Rate limits
+| Endpoint | Limit |
+|---|---|
+| `POST /api/auth/login` | 10 attempts per 15 minutes per email from the same network, and 100 per 15 minutes per network |
+| `POST /api/auth/register` | 20 per hour per network |
+
+Blocked requests get `429` with `code: "RATE_LIMITED"` and a `Retry-After` header. Limits are counted in memory by each running backend instance.
+
+## Tests
+```bash
+cd backend
+npm test
+```
+Integration tests (Vitest + Supertest) cover registration (Student ID and password rules), login, account status checks, logout, forced password change, role protection and rate limiting. They use the database in `backend/.env`, create users with `@test.local` emails and delete them afterwards.
 
 ### Frontend
 ```bash

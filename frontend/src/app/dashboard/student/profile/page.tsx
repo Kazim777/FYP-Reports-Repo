@@ -98,6 +98,9 @@ export default function ProfilePage() {
                   placeholder="2312219"
                   value={profile.studentId ?? ""}
                   onChange={(e) => set("studentId", e.target.value)}
+                  required
+                  pattern="\s*[A-Za-z0-9\-]{3,20}\s*"
+                  title="3–20 letters, numbers or hyphens"
                 />
               </Field>
               <Field label="Department" htmlFor="dept">

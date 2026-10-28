@@ -4,17 +4,20 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { api, RegisterInput, User } from "@/lib/api";
+import { api, ApiRequestError, RegisterInput, User } from "@/lib/api";
+import { isStrongPassword, PASSWORD_RULE_MESSAGE } from "@/lib/password";
 import { homePathFor } from "@/lib/session";
 import { INTEREST_OPTIONS, SKILL_OPTIONS, TECHNOLOGY_OPTIONS } from "@/lib/options";
 import AuthLayout from "@/components/AuthLayout";
 import AvatarPicker from "@/components/AvatarPicker";
+import PasswordChecklist from "@/components/PasswordChecklist";
 import TagPicker from "@/components/TagPicker";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
 const emptyForm: RegisterInput = {
   name: "",
   email: "",
+  studentId: "",
   password: "",
   avatar: null,
   skills: [],
@@ -41,6 +44,7 @@ export default function RegisterPage() {
       });
       router.replace(homePathFor(user.role));
     } catch (err) {
+      if (err instanceof ApiRequestError && err.status === 409) setStep("account");
       setError((err as Error).message);
       setLoading(false);
     }
@@ -48,8 +52,8 @@ export default function RegisterPage() {
 
   function handleAccountStep(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isStrongPassword(form.password)) {
+      setError(PASSWORD_RULE_MESSAGE);
       return;
     }
     setError("");
@@ -151,15 +155,28 @@ export default function RegisterPage() {
             required
           />
         </Field>
-        <Field label="Password" htmlFor="password" hint="At least 6 characters.">
+        <Field label="Student ID" htmlFor="studentId">
+          <Input
+            id="studentId"
+            placeholder="2312219"
+            value={form.studentId}
+            onChange={(e) => update({ studentId: e.target.value })}
+            required
+            pattern="\s*[A-Za-z0-9\-]{3,20}\s*"
+            title="3–20 letters, numbers or hyphens"
+          />
+        </Field>
+        <Field label="Password" htmlFor="password">
           <Input
             id="password"
             type="password"
+            autoComplete="new-password"
             placeholder="••••••••"
             value={form.password}
             onChange={(e) => update({ password: e.target.value })}
             required
           />
+          <PasswordChecklist password={form.password} />
         </Field>
         <Button type="submit" className="w-full">
           Continue <ArrowRight className="size-4" />

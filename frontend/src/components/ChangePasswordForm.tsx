@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { api, User } from "@/lib/api";
+import { isStrongPassword, PASSWORD_RULE_MESSAGE } from "@/lib/password";
+import PasswordChecklist from "@/components/PasswordChecklist";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
 const emptyFields = { currentPassword: "", newPassword: "", confirmPassword: "" };
@@ -25,7 +27,7 @@ export default function ChangePasswordForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (fields.newPassword.length < 6) return setError("New password must be at least 6 characters.");
+    if (!isStrongPassword(fields.newPassword)) return setError(PASSWORD_RULE_MESSAGE);
     if (fields.newPassword !== fields.confirmPassword) return setError("New passwords don't match.");
 
     setSaving(true);
@@ -56,7 +58,7 @@ export default function ChangePasswordForm({
           required
         />
       </Field>
-      <Field label="New password" htmlFor="newPassword" hint="At least 6 characters.">
+      <Field label="New password" htmlFor="newPassword">
         <Input
           id="newPassword"
           type="password"
@@ -65,6 +67,7 @@ export default function ChangePasswordForm({
           onChange={set("newPassword")}
           required
         />
+        <PasswordChecklist password={fields.newPassword} />
       </Field>
       <Field label="Confirm new password" htmlFor="confirmPassword">
         <Input

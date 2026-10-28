@@ -29,6 +29,7 @@ export interface AdminStats {
 export interface RegisterInput {
   name: string;
   email: string;
+  studentId: string;
   password: string;
   avatar: string | null;
   skills: string[];
