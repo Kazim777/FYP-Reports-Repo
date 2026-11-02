@@ -14,6 +14,7 @@ const HOME_PATHS: Record<Role, string> = {
 };
 
 const ROLE_AREAS: { prefix: string; roles: Role[] }[] = [
+  { prefix: "/dashboard/faculty/profile", roles: ["faculty"] },
   { prefix: "/dashboard/student", roles: ["student"] },
   { prefix: "/dashboard/faculty", roles: ["faculty", "admin"] },
   { prefix: "/dashboard/admin", roles: ["admin"] },

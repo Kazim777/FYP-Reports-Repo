@@ -7,7 +7,7 @@ import { DOMAIN_OPTIONS, INTEREST_OPTIONS, SKILL_OPTIONS, TECHNOLOGY_OPTIONS } f
 import { useCurrentUser } from "@/components/AppShell";
 import TagPicker from "@/components/TagPicker";
 import UserAvatar from "@/components/UserAvatar";
-import { Alert, Button, Card, Field, Input, PageHeader, Spinner, Textarea } from "@/components/ui";
+import { Alert, Button, Card, Field, Input, PageHeader, Spinner, Switch, Textarea } from "@/components/ui";
 
 const empty: StudentProfile = {
   studentId: "",
@@ -17,6 +17,8 @@ const empty: StudentProfile = {
   interests: [],
   technologies: [],
   domains: [],
+  lookingForPartner: false,
+  showEmail: false,
 };
 
 export default function ProfilePage() {
@@ -160,6 +162,24 @@ export default function ProfilePage() {
                   addPlaceholder="Add another domain…"
                 />
               </Field>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="font-semibold text-slate-900">Partnering & privacy</h3>
+            <div className="mt-5 space-y-5">
+              <Switch
+                label="Looking for an FYP partner"
+                description="Show up for other students who are searching for partners."
+                checked={profile.lookingForPartner}
+                onChange={(v) => set("lookingForPartner", v)}
+              />
+              <Switch
+                label="Show my email on my profile"
+                description="Other students can contact you directly. Admins can always see it."
+                checked={profile.showEmail}
+                onChange={(v) => set("showEmail", v)}
+              />
             </div>
           </Card>
         </div>

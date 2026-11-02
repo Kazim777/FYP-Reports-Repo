@@ -19,6 +19,14 @@ export const registerSchema = z.object({
   interests: tagList,
 });
 
+export const emailOnlySchema = z.object({ email });
+
+const token = z.string().trim().min(20).max(200);
+
+export const verifyEmailSchema = z.object({ token });
+
+export const resetPasswordSchema = z.object({ token, password: newPassword });
+
 export const loginSchema = z.object({
   email,
   password: z.string().min(1),

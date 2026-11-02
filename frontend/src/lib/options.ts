@@ -76,3 +76,20 @@ export const DOMAIN_OPTIONS = [
   "Game Development",
   "AR/VR",
 ];
+
+export const RESEARCH_AREA_OPTIONS = [
+  "Artificial Intelligence",
+  "Machine Learning",
+  "Natural Language Processing",
+  "Computer Vision",
+  "Data Science",
+  "Software Engineering",
+  "Human-Computer Interaction",
+  "Cybersecurity",
+  "Networks",
+  "Cloud Computing",
+  "Internet of Things",
+  "Blockchain",
+  "Information Systems",
+  "Education Technology",
+];

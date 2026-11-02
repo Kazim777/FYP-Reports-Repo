@@ -171,6 +171,48 @@ export function TagInput({
   );
 }
 
+export function Switch({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="relative flex cursor-pointer items-start justify-between gap-4">
+      <span>
+        <span className="block text-sm font-medium text-slate-900">{label}</span>
+        {description && <span className="mt-0.5 block text-sm text-slate-500">{description}</span>}
+      </span>
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="peer sr-only"
+      />
+      <span
+        aria-hidden
+        className={clsx(
+          "relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2",
+          checked ? "bg-brand-600" : "bg-slate-200"
+        )}
+      >
+        <span
+          className={clsx(
+            "absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform",
+            checked && "translate-x-5"
+          )}
+        />
+      </span>
+    </label>
+  );
+}
+
 export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={clsx("rounded-xl border border-slate-200 bg-white shadow-sm", className)}>{children}</div>;
 }

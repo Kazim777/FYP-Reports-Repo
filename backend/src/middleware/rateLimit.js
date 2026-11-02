@@ -38,3 +38,24 @@ export const registerRateLimit = createRateLimiter({
   limit: 20,
   message: 'Too many sign-up attempts from your network. Please try again later.',
 });
+
+const emailRequestsPerAddress = createRateLimiter({
+  windowMinutes: 15,
+  limit: 5,
+  keyGenerator: (req) => `${clientIp(req)}:${String(req.body?.email ?? '').trim().toLowerCase()}`,
+  message: 'Too many emails requested for this address. Please wait 15 minutes and try again.',
+});
+
+const emailRequestsPerNetwork = createRateLimiter({
+  windowMinutes: 60,
+  limit: 30,
+  message: 'Too many email requests from your network. Please try again later.',
+});
+
+export const emailRequestRateLimit = [emailRequestsPerNetwork, emailRequestsPerAddress];
+
+export const tokenRateLimit = createRateLimiter({
+  windowMinutes: 15,
+  limit: 30,
+  message: 'Too many attempts. Please wait a few minutes and try again.',
+});

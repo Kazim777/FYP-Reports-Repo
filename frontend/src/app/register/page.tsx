@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { api, ApiRequestError, RegisterInput, User } from "@/lib/api";
+import { api, ApiRequestError, RegisterInput } from "@/lib/api";
 import { isStrongPassword, PASSWORD_RULE_MESSAGE } from "@/lib/password";
-import { homePathFor } from "@/lib/session";
+import { rememberPendingEmail } from "@/lib/pendingEmail";
 import { INTEREST_OPTIONS, SKILL_OPTIONS, TECHNOLOGY_OPTIONS } from "@/lib/options";
 import AuthLayout from "@/components/AuthLayout";
 import AvatarPicker from "@/components/AvatarPicker";
@@ -38,11 +38,12 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      const { user } = await api<{ user: User }>("/auth/register", {
+      const { email } = await api<{ email: string }>("/auth/register", {
         method: "POST",
         body: JSON.stringify(form),
       });
-      router.replace(homePathFor(user.role));
+      rememberPendingEmail(email);
+      router.replace("/check-email");
     } catch (err) {
       if (err instanceof ApiRequestError && err.status === 409) setStep("account");
       setError((err as Error).message);

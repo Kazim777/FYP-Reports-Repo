@@ -16,14 +16,24 @@ afterAll(async () => {
 });
 
 describe('registration', () => {
-  it('creates a student and starts a session in an httpOnly cookie', async () => {
-    const agent = newAgent();
-    const res = await agent.post('/api/auth/register').send(registration()).expect(201);
+  it('creates an unverified student without starting a session', async () => {
+    const body = registration();
+    const res = await newAgent().post('/api/auth/register').send(body).expect(201);
 
-    expect(res.body.user.role).toBe('student');
+    expect(res.body).toEqual({ email: body.email, emailSent: true });
+    expect(res.headers['set-cookie']).toBeUndefined();
+    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    expect(user).toMatchObject({ role: 'student', status: 'pending' });
+  });
+});
+
+describe('session cookie', () => {
+  it('is httpOnly and is not exposed in the response body', async () => {
+    const user = await createUser();
+    const res = await newAgent().post('/api/auth/login').send({ email: user.email, password: TEST_PASSWORD }).expect(200);
+
     expect(res.body).not.toHaveProperty('token');
     expect(res.headers['set-cookie'][0]).toMatch(/fyp_session=.+HttpOnly/);
-    await agent.get('/api/auth/me').expect(200);
   });
 });
 

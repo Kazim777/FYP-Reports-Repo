@@ -8,9 +8,12 @@ export interface User {
   email: string;
   role: Role;
   avatar: string | null;
+  status: AccountStatus;
   mustChangePassword: boolean;
   createdAt: string;
 }
+
+export type AccountStatus = "pending" | "active" | "deactivated";
 
 export interface TemporaryPasswordResult {
   user: User;
@@ -77,6 +80,19 @@ export interface StudentProfile {
   interests: string[];
   technologies: string[];
   domains: string[];
+  lookingForPartner: boolean;
+  showEmail: boolean;
+}
+
+export interface FacultyProfile {
+  department: string | null;
+  designation: string | null;
+  researchAreas: string[];
+}
+
+export interface UserDetails {
+  user: User & { lastLoginAt: string | null };
+  profile: (Partial<StudentProfile> & Partial<FacultyProfile>) | null;
 }
 
 export class ApiRequestError extends Error {

@@ -20,9 +20,10 @@ const register = (body) => newAgent().post('/api/auth/register').send(body);
 describe('student ID at registration', () => {
   it('is saved on the student profile in upper case', async () => {
     const studentId = uniqueStudentId();
-    const res = await register(registration({ studentId: ` ${studentId.toLowerCase()} ` })).expect(201);
+    const body = registration({ studentId: ` ${studentId.toLowerCase()} ` });
+    await register(body).expect(201);
 
-    const profile = await prisma.studentProfile.findUnique({ where: { userId: res.body.user.id } });
+    const profile = await prisma.studentProfile.findFirst({ where: { user: { email: body.email } } });
     expect(profile.studentId).toBe(studentId);
   });
 

@@ -2,6 +2,8 @@ import { prisma } from '../../lib/prisma.js';
 import { ApiError, ErrorCode } from '../../lib/ApiError.js';
 import { hashPassword, verifyPassword } from '../../lib/password.js';
 import { assertStudentIdAvailable } from '../profiles/profile.service.js';
+import { sendPasswordResetEmail, sendVerificationEmail } from './accountEmail.service.js';
+import { consumeToken } from './authToken.service.js';
 
 export const publicUser = {
   id: true,
@@ -9,6 +11,7 @@ export const publicUser = {
   email: true,
   role: true,
   avatar: true,
+  status: true,
   mustChangePassword: true,
   createdAt: true,
 };
@@ -37,16 +40,59 @@ export async function register({ name, email, studentId, password, avatar, skill
   await assertEmailAvailable(email);
   await assertStudentIdAvailable(studentId);
 
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name,
       email,
       role: 'student',
+      status: 'pending',
       avatar,
       passwordHash: await hashPassword(password),
       studentProfile: { create: { studentId, skills, technologies, interests } },
     },
-    select: sessionUser,
+    select: publicUser,
+  });
+
+  try {
+    await sendVerificationEmail(user);
+    return { user, emailSent: true };
+  } catch (err) {
+    console.error('Verification email failed after registration:', err.message);
+    return { user, emailSent: false };
+  }
+}
+
+export async function verifyEmail({ token }) {
+  const userId = await consumeToken(token, 'email_verification');
+  await prisma.user.updateMany({ where: { id: userId, status: 'pending' }, data: { status: 'active' } });
+}
+
+export async function resendVerification({ email }) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (user?.status === 'pending') await sendVerificationEmail(user);
+}
+
+export async function requestPasswordReset({ email }) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (user && user.status !== 'deactivated') await sendPasswordResetEmail(user);
+}
+
+export async function resetPassword({ token, password }) {
+  const userId = await consumeToken(token, 'password_reset');
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (user.status === 'deactivated') {
+    const { message, code } = BLOCKED_STATUSES.deactivated;
+    throw ApiError.forbidden(message, code);
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      passwordHash: await hashPassword(password),
+      mustChangePassword: false,
+      tokenVersion: { increment: 1 },
+      status: 'active',
+    },
   });
 }
 

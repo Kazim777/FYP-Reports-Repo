@@ -37,6 +37,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/dashboard/faculty", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/faculty/projects", label: "Manage Projects", icon: FolderKanban },
     { href: "/dashboard/faculty/projects/new", label: "Add Project", icon: FilePlus2 },
+    { href: "/dashboard/faculty/profile", label: "My Profile", icon: UserRound },
     { href: "/dashboard/account", label: "Account", icon: Settings },
   ],
   admin: [

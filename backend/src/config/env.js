@@ -9,6 +9,12 @@ const schema = z.object({
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
   BLOB_STORE_ID: z.string().optional(),
+  GMAIL_USER: z.string().email().optional(),
+  GMAIL_APP_PASSWORD: z
+    .string()
+    .transform((value) => value.replace(/\s/g, ''))
+    .optional(),
+  MAIL_FROM_NAME: z.string().default('FYP Hub'),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -26,4 +32,12 @@ export const env = {
   jwtSecret: parsed.data.JWT_SECRET,
   clientUrl: parsed.data.CLIENT_URL,
   blobStorageConfigured: Boolean(parsed.data.BLOB_READ_WRITE_TOKEN || parsed.data.BLOB_STORE_ID),
+  gmail:
+    parsed.data.GMAIL_USER && parsed.data.GMAIL_APP_PASSWORD
+      ? {
+          user: parsed.data.GMAIL_USER,
+          appPassword: parsed.data.GMAIL_APP_PASSWORD,
+          fromName: parsed.data.MAIL_FROM_NAME,
+        }
+      : null,
 };
