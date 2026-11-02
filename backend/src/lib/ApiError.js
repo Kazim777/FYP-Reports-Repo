@@ -5,6 +5,7 @@ export const ErrorCode = {
   EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
   ACCOUNT_DEACTIVATED: 'ACCOUNT_DEACTIVATED',
   RATE_LIMITED: 'RATE_LIMITED',
+  INVALID_TOKEN: 'INVALID_TOKEN',
 };
 
 export class ApiError extends Error {

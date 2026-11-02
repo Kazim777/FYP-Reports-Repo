@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import clsx from "clsx";
-import { KeyRound, Search, Trash2, UserPlus, Users } from "lucide-react";
+import { KeyRound, Search, Trash2, UserCheck, UserPlus, Users, UserX } from "lucide-react";
 import { api, formatDate, Role, TemporaryPasswordResult, User } from "@/lib/api";
+import AccountStatusBadge from "@/components/AccountStatusBadge";
 import { useCurrentUser } from "@/components/AppShell";
 import RoleBadge from "@/components/RoleBadge";
 import TemporaryPasswordCard from "@/components/TemporaryPasswordCard";
 import UserAvatar from "@/components/UserAvatar";
-import { Alert, Badge, Button, ButtonLink, Card, EmptyState, Input, PageHeader, Spinner } from "@/components/ui";
+import { Alert, Button, ButtonLink, Card, EmptyState, Input, PageHeader, Spinner } from "@/components/ui";
 
 const roleFilters: { value: Role | null; label: string }[] = [
   { value: null, label: "All" },
@@ -44,6 +46,24 @@ export default function UsersPage() {
       const result = await api<TemporaryPasswordResult>(`/admin/users/${user.id}/reset-password`, { method: "POST" });
       setResetResult(result);
       setUsers((list) => list?.map((u) => (u.id === user.id ? result.user : u)) ?? null);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function toggleStatus(user: User) {
+    const deactivating = user.status !== "deactivated";
+    const question = deactivating
+      ? `Deactivate ${user.name}'s account? They will be logged out and won't be able to log in.`
+      : `Reactivate ${user.name}'s account? They will be able to log in again.`;
+    if (!confirm(question)) return;
+    setError("");
+    try {
+      const { user: updated } = await api<{ user: User }>(`/admin/users/${user.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: deactivating ? "deactivated" : "active" }),
+      });
+      setUsers((list) => list?.map((u) => (u.id === user.id ? updated : u)) ?? null);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -142,9 +162,12 @@ export default function UsersPage() {
                         <div className="flex items-center gap-3">
                           <UserAvatar name={u.name} avatar={u.avatar} size={36} />
                           <div className="min-w-0">
-                            <p className="truncate font-medium text-slate-900">
+                            <Link
+                              href={`/dashboard/admin/users/${u.id}`}
+                              className="block truncate font-medium text-slate-900 hover:text-brand-600"
+                            >
                               {u.name} {isSelf && <span className="text-xs font-normal text-slate-400">(you)</span>}
-                            </p>
+                            </Link>
                             <p className="truncate text-xs text-slate-500">{u.email}</p>
                           </div>
                         </div>
@@ -153,7 +176,7 @@ export default function UsersPage() {
                         <RoleBadge role={u.role} />
                       </td>
                       <td className="px-5 py-3.5">
-                        {u.mustChangePassword ? <Badge tone="amber">Awaiting first login</Badge> : <Badge tone="green">Active</Badge>}
+                        <AccountStatusBadge user={u} />
                       </td>
                       <td className="whitespace-nowrap px-5 py-3.5 text-slate-600">{formatDate(u.createdAt)}</td>
                       <td className="px-5 py-3.5">
@@ -165,6 +188,13 @@ export default function UsersPage() {
                               title="Reset password"
                             >
                               <KeyRound className="size-4" />
+                            </button>
+                            <button
+                              onClick={() => toggleStatus(u)}
+                              className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                              title={u.status === "deactivated" ? "Reactivate account" : "Deactivate account"}
+                            >
+                              {u.status === "deactivated" ? <UserCheck className="size-4" /> : <UserX className="size-4" />}
                             </button>
                             <button
                               onClick={() => deleteUser(u)}

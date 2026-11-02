@@ -36,6 +36,17 @@ export function listUsers({ q, role } = {}) {
   });
 }
 
+export async function getUser(id) {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { ...publicUser, lastLoginAt: true, studentProfile: true, facultyProfile: true },
+  });
+  if (!user) throw ApiError.notFound('User not found');
+
+  const { studentProfile, facultyProfile, ...account } = user;
+  return { user: account, profile: studentProfile ?? facultyProfile };
+}
+
 export async function createFaculty({ name, email }) {
   await assertEmailAvailable(email);
 
@@ -76,6 +87,16 @@ export async function resetPassword(id, adminId) {
   });
 
   return { user, temporaryPassword };
+}
+
+export async function setStatus(id, adminId, { status }) {
+  await findOtherUser(id, adminId);
+
+  return prisma.user.update({
+    where: { id },
+    data: { status, tokenVersion: { increment: 1 } },
+    select: publicUser,
+  });
 }
 
 export async function deleteUser(id, adminId) {

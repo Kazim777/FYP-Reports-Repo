@@ -76,6 +76,12 @@ Everyone uses the same `/login` page. Accounts created with a temporary password
 
 - Students sign up with a **Student ID** (3–20 letters, numbers or hyphens, stored in upper case). Each ID can belong to only one account.
 - New and changed passwords need **at least 8 characters with a letter and a number**. Older passwords keep working until they are changed.
+- New students must **verify their email** before logging in. The link is valid for 24 hours, and a new one can be requested from `/check-email` or from the login form.
+- **Forgot password** at `/forgot-password` emails a single-use link valid for 30 minutes. Resetting ends all existing sessions.
+- Admins can **deactivate and reactivate** accounts from **Users**. Deactivation logs the user out immediately.
+
+### Email
+Emails are sent through Gmail with Nodemailer. Set `GMAIL_USER` and `GMAIL_APP_PASSWORD` (Google Account → Security → 2-Step Verification → App passwords). Without them, emails are printed in the backend terminal during development, and the API answers `503` in production.
 
 ### How sessions work
 - Logging in sets an **httpOnly cookie** (`fyp_session`) that lasts **3 hours**. JavaScript cannot read it.
@@ -89,6 +95,8 @@ Everyone uses the same `/login` page. Accounts created with a temporary password
 |---|---|
 | `POST /api/auth/login` | 10 attempts per 15 minutes per email from the same network, and 100 per 15 minutes per network |
 | `POST /api/auth/register` | 20 per hour per network |
+| `POST /api/auth/resend-verification`, `/forgot-password` | 5 per 15 minutes per email from the same network, and 30 per hour per network |
+| `POST /api/auth/verify-email`, `/reset-password` | 30 per 15 minutes per network |
 
 Blocked requests get `429` with `code: "RATE_LIMITED"` and a `Retry-After` header. Limits are counted in memory by each running backend instance.
 
@@ -97,7 +105,7 @@ Blocked requests get `429` with `code: "RATE_LIMITED"` and a `Retry-After` heade
 cd backend
 npm test
 ```
-Integration tests (Vitest + Supertest) cover registration (Student ID and password rules), login, account status checks, logout, forced password change, role protection and rate limiting. They use the database in `backend/.env`, create users with `@test.local` emails and delete them afterwards.
+Integration tests (Vitest + Supertest) cover registration (Student ID and password rules), email verification, password reset, student and faculty profiles, admin deactivation, login, account status checks, logout, forced password change, role protection and rate limiting. They use the database in `backend/.env`, create users with `@test.local` emails and delete them afterwards.
 
 ### Frontend
 ```bash
@@ -136,6 +144,9 @@ Environment variables (Project → Settings → Environment Variables):
 | `JWT_SECRET` | Random string, 32+ characters |
 | `CLIENT_URL` | The deployed URL, e.g. `https://fyp-hub.vercel.app` |
 | `BLOB_READ_WRITE_TOKEN` | Added automatically when a Blob store is connected to the project |
+| `GMAIL_USER` | Gmail address that sends verification and reset emails |
+| `GMAIL_APP_PASSWORD` | 16-character Gmail App Password for that account |
+| `MAIL_FROM_NAME` | Optional sender name, defaults to `FYP Hub` |
 
 Database migrations are not run during the build. After changing the schema, run `npm run db:deploy` in `backend/` against the production database.
 
@@ -144,6 +155,10 @@ Database migrations are not run during the build. After changing the schema, run
 | Method | Endpoint | Access |
 |---|---|---|
 | POST | `/api/auth/register` | Public |
+| POST | `/api/auth/verify-email` (`{ token }`) | Public |
+| POST | `/api/auth/resend-verification` (`{ email }`) | Public |
+| POST | `/api/auth/forgot-password` (`{ email }`) | Public |
+| POST | `/api/auth/reset-password` (`{ token, password }`) | Public |
 | POST | `/api/auth/login` | Public |
 | GET | `/api/auth/me` | Logged in |
 | GET | `/api/projects?q=keyword` | Logged in |
@@ -154,13 +169,15 @@ Database migrations are not run during the build. After changing the schema, run
 | POST | `/api/projects/:id/pdf/upload-url` (signed upload URL, max 15 MB) | Faculty, Admin |
 | POST | `/api/projects/:id/pdf` (`{ pathname, fileName }` after uploading) | Faculty, Admin |
 | DELETE | `/api/projects/:id/pdf` | Faculty, Admin |
-| GET / PUT | `/api/profiles/me` | Student |
+| GET / PUT | `/api/profiles/me` (student or faculty profile, based on the logged-in role) | Student, Faculty |
 | PATCH | `/api/auth/me` (name, avatar) | Logged in |
 | POST | `/api/auth/change-password` | Logged in |
 | GET | `/api/admin/stats` | Admin |
 | GET | `/api/admin/users?q=&role=` | Admin |
+| GET | `/api/admin/users/:id` (account details and profile) | Admin |
 | POST | `/api/admin/users/faculty` | Admin |
 | POST | `/api/admin/users/:id/reset-password` | Admin |
+| PATCH | `/api/admin/users/:id/status` (`{ status: "active" \| "deactivated" }`) | Admin |
 | DELETE | `/api/admin/users/:id` | Admin |
 
 Project create / edit / delete and PDF upload are allowed for both Faculty and Admin.

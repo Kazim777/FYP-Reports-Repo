@@ -3,6 +3,7 @@ import request from 'supertest';
 import app from '../src/app.js';
 import { prisma } from '../src/lib/prisma.js';
 import { hashPassword } from '../src/lib/password.js';
+import { outbox } from '../src/lib/mailer.js';
 
 export const TEST_PASSWORD = 'TestPass123';
 
@@ -51,4 +52,14 @@ export async function cleanupTestUsers() {
   createdEmails.clear();
 }
 
-export { app, prisma };
+export function emailsTo(email) {
+  return outbox.filter((message) => message.to === email);
+}
+
+export function tokenFromLatestEmail(email) {
+  const message = emailsTo(email).at(-1);
+  const link = message?.text.match(/https?:\/\/\S+/)?.[0];
+  return link ? new URL(link).searchParams.get('token') : null;
+}
+
+export { app, outbox, prisma };

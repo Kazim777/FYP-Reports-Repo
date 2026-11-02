@@ -1,8 +1,31 @@
 import * as authService from './auth.service.js';
 import { endSession, readSession, respondWithSession } from './session.service.js';
 
+const EMAIL_SENT_IF_ELIGIBLE = 'If an account matches that email, we have sent it a link. Please check your inbox.';
+
 export async function register(req, res) {
-  respondWithSession(res, await authService.register(req.body), 201);
+  const { user, emailSent } = await authService.register(req.body);
+  res.status(201).json({ email: user.email, emailSent });
+}
+
+export async function verifyEmail(req, res) {
+  await authService.verifyEmail(req.body);
+  res.json({ message: 'Your email address is verified. You can now log in.' });
+}
+
+export async function resendVerification(req, res) {
+  await authService.resendVerification(req.body);
+  res.json({ message: EMAIL_SENT_IF_ELIGIBLE });
+}
+
+export async function forgotPassword(req, res) {
+  await authService.requestPasswordReset(req.body);
+  res.json({ message: EMAIL_SENT_IF_ELIGIBLE });
+}
+
+export async function resetPassword(req, res) {
+  await authService.resetPassword(req.body);
+  res.json({ message: 'Your password has been reset. You can now log in with your new password.' });
 }
 
 export async function login(req, res) {

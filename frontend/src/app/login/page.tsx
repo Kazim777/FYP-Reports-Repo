@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, User } from "@/lib/api";
+import { api, ApiRequestError, User } from "@/lib/api";
 import { landingPathFor, safeNextPath } from "@/lib/session";
 import AuthLayout from "@/components/AuthLayout";
+import ResendVerificationButton from "@/components/ResendVerificationButton";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
 export default function LoginPage() {
@@ -13,11 +14,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setUnverifiedEmail("");
     setLoading(true);
     try {
       const { user } = await api<{ user: User }>("/auth/login", {
@@ -27,6 +30,7 @@ export default function LoginPage() {
       const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
       router.replace(user.mustChangePassword || !next ? landingPathFor(user) : next);
     } catch (err) {
+      if (err instanceof ApiRequestError && err.code === "EMAIL_NOT_VERIFIED") setUnverifiedEmail(email.trim());
       setError((err as Error).message);
       setLoading(false);
     }
@@ -36,6 +40,7 @@ export default function LoginPage() {
     <AuthLayout title="Welcome back" subtitle="Log in to continue to your dashboard.">
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && <Alert>{error}</Alert>}
+        {unverifiedEmail && <ResendVerificationButton email={unverifiedEmail} />}
         <Field label="Email" htmlFor="email">
           <Input
             id="email"
@@ -47,7 +52,15 @@ export default function LoginPage() {
             autoFocus
           />
         </Field>
-        <Field label="Password" htmlFor="password">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+              Password
+            </label>
+            <Link href="/forgot-password" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+              Forgot password?
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
@@ -56,7 +69,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-        </Field>
+        </div>
         <Button type="submit" loading={loading} className="w-full">
           Log in
         </Button>
