@@ -5,10 +5,21 @@ import { useState } from "react";
 import clsx from "clsx";
 import { AlertCircle, CheckCircle2, GraduationCap, Loader2, X } from "lucide-react";
 
-export function Logo({ className, inverted }: { className?: string; inverted?: boolean }) {
+export function Logo({
+  className,
+  inverted,
+  href = "/",
+  onClick,
+}: {
+  className?: string;
+  inverted?: boolean;
+  href?: string;
+  onClick?: () => void;
+}) {
   return (
     <Link
-      href="/"
+      href={href}
+      onClick={onClick}
       className={clsx("flex items-center gap-2 font-semibold", inverted ? "text-white" : "text-slate-900", className)}
     >
       <span

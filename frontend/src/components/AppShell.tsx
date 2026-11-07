@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { api, logout, Role, User } from "@/lib/api";
+import { homePathFor } from "@/lib/session";
 import UserAvatar from "@/components/UserAvatar";
 import { Alert, Button, Logo, Spinner } from "@/components/ui";
 
@@ -76,7 +77,9 @@ export default function AppShell({ role, children }: { role: Role; children: Rea
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
-  const nav = NAV[user?.role ?? role];
+  const currentRole = user?.role ?? role;
+  const home = homePathFor(currentRole);
+  const nav = NAV[currentRole];
   const active = nav
     .filter((item) => !item.soon && (pathname === item.href || pathname.startsWith(`${item.href}/`)))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
@@ -90,7 +93,7 @@ export default function AppShell({ role, children }: { role: Role; children: Rea
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center px-5">
-        <Logo />
+        <Logo href={home} onClick={() => setMobileOpen(false)} />
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -190,7 +193,7 @@ export default function AppShell({ role, children }: { role: Role; children: Rea
           <button onClick={() => setMobileOpen(true)} className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100">
             <Menu className="size-5" />
           </button>
-          <Logo />
+          <Logo href={home} />
         </header>
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{content}</main>
       </div>
